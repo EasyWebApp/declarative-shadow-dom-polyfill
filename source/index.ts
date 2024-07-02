@@ -1,4 +1,14 @@
-function getHTML(this: Element | DocumentFragment) {
+export interface HTMLSerializationOptions {
+  serializableShadowRoots?: boolean;
+  shadowRoots?: ShadowRoot[];
+}
+
+export function getHTML(
+  this: Element | DocumentFragment,
+  { serializableShadowRoots, shadowRoots }: HTMLSerializationOptions = {}
+) {
+  if (!serializableShadowRoots) return (this as HTMLElement).innerHTML;
+
   const walker = document.createTreeWalker(this),
     markup: string[] = [];
   var currentNode: Node | null = null;
@@ -19,7 +29,11 @@ function getHTML(this: Element | DocumentFragment) {
       if (currentNode instanceof HTMLElement) {
         const { shadowRoot } = currentNode.attachInternals();
 
-        if (shadowRoot) markup.push(getHTML.call(shadowRoot));
+        if (
+          shadowRoot &&
+          (!shadowRoots?.filter(Boolean)[0] || shadowRoots.includes(shadowRoot))
+        )
+          markup.push(getHTML.call(shadowRoot));
       }
     }
     const { parentNode } = currentNode;
@@ -37,5 +51,13 @@ function getHTML(this: Element | DocumentFragment) {
   return markup.join("");
 }
 
-globalThis.Element.prototype["getHTML"] ||= getHTML;
-globalThis.DocumentFragment.prototype["getHTML"] ||= getHTML;
+declare global {
+  interface ShadowRootSerializable {
+    getHTML: (options?: HTMLSerializationOptions) => string;
+  }
+  interface Element extends ShadowRootSerializable {}
+  interface DocumentFragment extends ShadowRootSerializable {}
+}
+
+globalThis.Element.prototype.getHTML ||= getHTML;
+globalThis.DocumentFragment.prototype.getHTML ||= getHTML;
