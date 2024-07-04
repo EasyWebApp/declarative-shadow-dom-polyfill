@@ -1,0 +1,34 @@
+{
+  "name": "declarative-shadow-dom-polyfill",
+  "version": "0.3.0",
+  "license": "LGPL-2.1-or-later",
+  "author": "shiy2008@gmail.com",
+  "description": "Web standard polyfill for Declarative Shadow DOM",
+  "keywords": [
+    "web",
+    "component",
+    "dom",
+    "standard",
+    "polyfill",
+    "ssr"
+  ],
+  "homepage": "https://web-cell.dev/declarative-shadow-dom-polyfill/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EasyWebApp/declarative-shadow-dom-polyfill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EasyWebApp/declarative-shadow-dom-polyfill/issues"
+  },
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "devDependencies": {
+    "typedoc": "^0.26.3",
+    "typedoc-plugin-mdn-links": "^3.2.2",
+    "typescript": "^5.5.3"
+  },
+  "scripts": {
+    "build": "rm -rf dist/ docs/  &&  tsc  &&  typedoc source/",
+    "prepublishOnly": "npm run build"
+  }
+}

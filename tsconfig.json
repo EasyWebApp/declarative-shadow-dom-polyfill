@@ -1,0 +1,15 @@
+{
+  "compilerOptions": {
+    "downlevelIteration": true,
+    "lib": ["ES2023", "DOM", "DOM.Iterable"],
+    "declaration": true,
+    "outDir": "dist"
+  },
+  "typedocOptions": {
+    "name": "Declarative Shadow DOM polyfill",
+    "excludeExternals": true,
+    "excludePrivate": true,
+    "readme": "./ReadMe.md",
+    "plugin": ["typedoc-plugin-mdn-links"]
+  }
+}
