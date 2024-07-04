@@ -28,6 +28,7 @@
     "typescript": "^5.5.3"
   },
   "scripts": {
-    "build": "rm -rf dist/ docs/  &&  tsc  &&  typedoc source/"
+    "build": "rm -rf dist/ docs/  &&  tsc  &&  typedoc source/",
+    "prepublishOnly": "npm run build"
   }
 }
