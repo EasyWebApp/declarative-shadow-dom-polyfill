@@ -12,6 +12,14 @@
     "polyfill",
     "ssr"
   ],
+  "homepage": "https://web-cell.dev/declarative-shadow-dom-polyfill/",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EasyWebApp/declarative-shadow-dom-polyfill.git"
+  },
+  "bugs": {
+    "url": "https://github.com/EasyWebApp/declarative-shadow-dom-polyfill/issues"
+  },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "devDependencies": {

@@ -88,8 +88,8 @@ export function setHTMLUnsafe(this: Element | ShadowRoot, html: string) {
 }
 
 const domParser = new DOMParser(),
-  initDocument = (document = globalThis.document) =>
-    attachDeclarativeShadowRoots(document.documentElement);
+  initDocument = ({ documentElement } = document) =>
+    attachDeclarativeShadowRoots(documentElement);
 
 export function parseHTMLUnsafe(html: string) {
   const document = domParser.parseFromString(html, "text/html");
@@ -108,16 +108,16 @@ declare global {
   interface ShadowRoot extends ShadowRootSerializable {}
 }
 
-globalThis.Element.prototype.getHTML ||= getHTML;
-globalThis.Element.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
-globalThis.ShadowRoot.prototype.getHTML ||= getHTML;
-globalThis.ShadowRoot.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
-globalThis.document["parseHTMLUnsafe"] ||= parseHTMLUnsafe;
+Element.prototype.getHTML ||= getHTML;
+Element.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
+ShadowRoot.prototype.getHTML ||= getHTML;
+ShadowRoot.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
+Document["parseHTMLUnsafe"] ||= parseHTMLUnsafe;
 
 new Promise<Event | void>((resolve) => {
-  if (globalThis.document.readyState === "complete") resolve();
+  if (document.readyState === "complete") resolve();
   else {
-    globalThis.document.addEventListener("DOMContentLoaded", resolve);
-    globalThis.window.addEventListener("load", resolve);
+    document.addEventListener("DOMContentLoaded", resolve);
+    window.addEventListener("load", resolve);
   }
 }).then(() => initDocument());
