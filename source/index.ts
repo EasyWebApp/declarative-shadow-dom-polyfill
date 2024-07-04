@@ -3,22 +3,34 @@ export interface HTMLSerializationOptions {
   shadowRoots?: ShadowRoot[];
 }
 
+const xmlSerializer = new XMLSerializer();
+
 export function getHTML(
-  this: Element | DocumentFragment,
+  this: Element | ShadowRoot,
   { serializableShadowRoots, shadowRoots }: HTMLSerializationOptions = {}
 ) {
   if (!serializableShadowRoots) return (this as HTMLElement).innerHTML;
 
-  const walker = document.createTreeWalker(this),
+  const walker = document.createTreeWalker(this, NodeFilter.SHOW_ALL, {
+      acceptNode: (node) =>
+        node instanceof SVGElement
+          ? NodeFilter.FILTER_SKIP
+          : NodeFilter.FILTER_ACCEPT,
+    }),
     markup: string[] = [];
   var currentNode: Node | null = null;
 
   while ((currentNode = walker.nextNode())) {
-    if (currentNode instanceof Text) markup.push(currentNode.nodeValue || "");
+    if (currentNode instanceof CDATASection)
+      markup.push(`<![CDATA[${currentNode.nodeValue}]]>`);
+    else if (currentNode instanceof Text)
+      markup.push(currentNode.nodeValue || "");
     else if (currentNode instanceof Comment)
       markup.push(`<!--${currentNode.nodeValue}-->`);
     else if (currentNode instanceof ShadowRoot)
       markup.push(`<template shadowrootmode="${currentNode.mode}">`);
+    else if (currentNode instanceof SVGElement)
+      markup.push(xmlSerializer.serializeToString(currentNode));
     else if (currentNode instanceof Element) {
       const attributes = [...currentNode.attributes].map(
         ({ name, value }) => `${name}=${JSON.parse(value)}`
@@ -51,13 +63,50 @@ export function getHTML(
   return markup.join("");
 }
 
+export function attachDeclarativeShadowRoots(root: HTMLElement | ShadowRoot) {
+  const templates = root.querySelectorAll<HTMLTemplateElement>(
+    "template[shadowrootmode]"
+  );
+
+  for (const template of templates) {
+    const { parentElement, shadowRootMode: mode, content } = template;
+    // @ts-ignore
+    const shadowRoot = parentElement!.attachShadow({ mode });
+
+    shadowRoot.append(content);
+
+    template.remove();
+
+    attachDeclarativeShadowRoots(shadowRoot);
+  }
+}
+
+export function setHTMLUnsafe(this: Element | ShadowRoot, html: string) {
+  this.innerHTML = html;
+
+  attachDeclarativeShadowRoots(this as HTMLElement);
+}
+
 declare global {
   interface ShadowRootSerializable {
-    getHTML: (options?: HTMLSerializationOptions) => string;
+    getHTML: typeof getHTML;
+    setHTMLUnsafe: typeof setHTMLUnsafe;
   }
   interface Element extends ShadowRootSerializable {}
-  interface DocumentFragment extends ShadowRootSerializable {}
+  interface ShadowRoot extends ShadowRootSerializable {}
 }
 
 globalThis.Element.prototype.getHTML ||= getHTML;
-globalThis.DocumentFragment.prototype.getHTML ||= getHTML;
+globalThis.Element.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
+globalThis.ShadowRoot.prototype.getHTML ||= getHTML;
+globalThis.ShadowRoot.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
+
+new Promise<Event | void>((resolve) => {
+  if (globalThis.document.readyState === "complete") resolve();
+  else {
+    globalThis.document.addEventListener("DOMContentLoaded", resolve);
+    globalThis.window.addEventListener("load", resolve);
+  }
+}).then(() =>
+  attachDeclarativeShadowRoots(globalThis.document.documentElement)
+);
