@@ -87,6 +87,18 @@ export function setHTMLUnsafe(this: Element | ShadowRoot, html: string) {
   attachDeclarativeShadowRoots(this as HTMLElement);
 }
 
+const domParser = new DOMParser(),
+  initDocument = (document = globalThis.document) =>
+    attachDeclarativeShadowRoots(document.documentElement);
+
+export function parseHTMLUnsafe(html: string) {
+  const document = domParser.parseFromString(html, "text/html");
+
+  initDocument(document);
+
+  return document;
+}
+
 declare global {
   interface ShadowRootSerializable {
     getHTML: typeof getHTML;
@@ -100,6 +112,7 @@ globalThis.Element.prototype.getHTML ||= getHTML;
 globalThis.Element.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
 globalThis.ShadowRoot.prototype.getHTML ||= getHTML;
 globalThis.ShadowRoot.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
+globalThis.document["parseHTMLUnsafe"] ||= parseHTMLUnsafe;
 
 new Promise<Event | void>((resolve) => {
   if (globalThis.document.readyState === "complete") resolve();
@@ -107,6 +120,4 @@ new Promise<Event | void>((resolve) => {
     globalThis.document.addEventListener("DOMContentLoaded", resolve);
     globalThis.window.addEventListener("load", resolve);
   }
-}).then(() =>
-  attachDeclarativeShadowRoots(globalThis.document.documentElement)
-);
+}).then(() => initDocument());
