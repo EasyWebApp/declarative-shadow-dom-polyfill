@@ -20,9 +20,27 @@ Any one of these methods shown below is available.
 ### 1. CDN
 
 ```html
-<head>
-  <script src="https://polyfill.web-cell.dev/feature/DeclarativeShadowDOM.js"></script>
-</head>
+<html>
+  <head>
+    <script src="https://polyfill.web-cell.dev/feature/DeclarativeShadowDOM.js"></script>
+
+    <script src="./my-tag.js"></script>
+    <script>
+      window.onload = () => {
+        const { shadowRoot } = document.querySelector("my-tag");
+
+        console.log(shadowRoot);
+      };
+    </script>
+  </head>
+  <body>
+    <my-tag>
+      <template shadowrootmode="open">
+        <p>Hello, Declarative Shadow DOM!</p>
+      </template>
+    </my-tag>
+  </body>
+</html>
 ```
 
 ### 2. Polyfill import
@@ -34,16 +52,16 @@ const markup = `
 <my-tag>
     <template shadowrootmode="open">
         <p>Hello, Declarative Shadow DOM!</p>
-    <template/>
+    </template>
 </my-tag>`;
 
 document.body.setHTMLUnsafe(markup);
 
-console.assert(markup === document.body.getHTML(), "Shadow DOM serialization");
+console.log(document.body.getHTML());
 
 const newDocument = Document.parseHTMLUnsafe(markup);
 
-console.assert(markup === newDocument.body.getHTML(), "Shadow DOM parsing");
+console.log(newDocument.body.getHTML());
 ```
 
 ### 3. Ponyfill import
@@ -59,18 +77,16 @@ const markup = `
 <my-tag>
     <template shadowrootmode="open">
         <p>Hello, Declarative Shadow DOM!</p>
-    <template/>
+    </template>
 </my-tag>`;
 
 setHTMLUnsafe.call(document.body, markup);
 
-console.assert(
-  markup === getHTML.call(document.body),
-  "Shadow DOM serialization"
-);
+console.log(getHTML.call(document.body));
+
 const newDocument = parseHTMLUnsafe(markup);
 
-console.assert(markup === getHTML.call(newDocument.body), "Shadow DOM parsing");
+console.log(getHTML.call(newDocument.body));
 ```
 
 ### 4. Node.js & Bun

@@ -1,8 +1,10 @@
 {
   "compilerOptions": {
+    "module": "UMD",
     "downlevelIteration": true,
     "lib": ["ES2023", "DOM", "DOM.Iterable"],
     "declaration": true,
+    "sourceMap": true,
     "outDir": "dist"
   },
   "typedocOptions": {
