@@ -21,7 +21,7 @@ HTMLElement.prototype.attachShadow = function (options: ShadowRootInit) {
  */
 export function getHTML(
   this: Element | ShadowRoot,
-  { serializableShadowRoots, shadowRoots }: HTMLSerializationOptions = {},
+  { serializableShadowRoots, shadowRoots }: HTMLSerializationOptions = {}
 ) {
   shadowRoots = shadowRoots?.filter(Boolean) || [];
 
@@ -32,7 +32,7 @@ export function getHTML(
       acceptNode: (node) =>
         node === this || node instanceof SVGElement
           ? NodeFilter.FILTER_SKIP
-          : NodeFilter.FILTER_ACCEPT,
+          : NodeFilter.FILTER_ACCEPT
     }),
     markup: string[] = [];
 
@@ -50,7 +50,7 @@ export function getHTML(
     else if (currentNode instanceof Element) {
       const tagName = currentNode.tagName.toLowerCase(),
         attributes = [...currentNode.attributes].map(
-          ({ name, value }) => `${name}=${JSON.parse(value)}`,
+          ({ name, value }) => `${name}=${JSON.parse(value)}`
         ),
         shadowRoot = shadowDOMs.get(currentNode);
 
@@ -60,8 +60,8 @@ export function getHTML(
         markup.push(
           `<template shadowrootmode="${shadowRoot.mode}">${getHTML.call(
             shadowRoot,
-            { serializableShadowRoots, shadowRoot },
-          )}</template>`,
+            { serializableShadowRoots, shadowRoot }
+          )}</template>`
         );
     }
     const { nextSibling, parentElement } = currentNode;
@@ -80,7 +80,7 @@ export function getHTML(
 
 export function attachDeclarativeShadowRoots(root: HTMLElement | ShadowRoot) {
   const templates = root.querySelectorAll<HTMLTemplateElement>(
-    "template[shadowrootmode]",
+    "template[shadowrootmode]"
   );
 
   for (const template of templates) {
@@ -88,7 +88,7 @@ export function attachDeclarativeShadowRoots(root: HTMLElement | ShadowRoot) {
 
     const shadowRoot = parentElement!.attachShadow({
       // @ts-ignore
-      mode: template.getAttribute("shadowrootmode"),
+      mode: template.getAttribute("shadowrootmode")
     });
 
     shadowRoot.append(content);

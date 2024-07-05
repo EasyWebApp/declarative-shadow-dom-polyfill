@@ -34,6 +34,9 @@
     "typedoc-plugin-mdn-links": "^3.2.2",
     "typescript": "^5.5.3"
   },
+  "prettier": {
+    "trailingComma": "none"
+  },
   "lint-staged": {
     "*.{md,json,yml,ts}": "prettier --write"
   },
