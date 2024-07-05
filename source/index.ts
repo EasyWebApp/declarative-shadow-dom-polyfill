@@ -3,21 +3,39 @@ export interface HTMLSerializationOptions {
   shadowRoots?: ShadowRoot[];
 }
 
-const xmlSerializer = new XMLSerializer();
+const xmlSerializer = new XMLSerializer(),
+  { attachShadow } = HTMLElement.prototype,
+  shadowDOMs = new WeakMap<Element, ShadowRoot>();
 
+HTMLElement.prototype.attachShadow = function (options: ShadowRootInit) {
+  const shadowRoot = attachShadow.call(this, options);
+
+  shadowDOMs.set(this, shadowRoot);
+
+  return shadowRoot;
+};
+
+/**
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/getHTML}
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/getHTML}
+ */
 export function getHTML(
   this: Element | ShadowRoot,
   { serializableShadowRoots, shadowRoots }: HTMLSerializationOptions = {}
 ) {
-  if (!serializableShadowRoots) return (this as HTMLElement).innerHTML;
+  shadowRoots = shadowRoots?.filter(Boolean) || [];
+
+  if (!serializableShadowRoots || !shadowRoots[0])
+    return (this as HTMLElement).innerHTML;
 
   const walker = document.createTreeWalker(this, NodeFilter.SHOW_ALL, {
       acceptNode: (node) =>
-        node instanceof SVGElement
+        node === this || node instanceof SVGElement
           ? NodeFilter.FILTER_SKIP
-          : NodeFilter.FILTER_ACCEPT,
+          : NodeFilter.FILTER_ACCEPT
     }),
     markup: string[] = [];
+
   var currentNode: Node | null = null;
 
   while ((currentNode = walker.nextNode())) {
@@ -27,37 +45,34 @@ export function getHTML(
       markup.push(currentNode.nodeValue || "");
     else if (currentNode instanceof Comment)
       markup.push(`<!--${currentNode.nodeValue}-->`);
-    else if (currentNode instanceof ShadowRoot)
-      markup.push(`<template shadowrootmode="${currentNode.mode}">`);
     else if (currentNode instanceof SVGElement)
       markup.push(xmlSerializer.serializeToString(currentNode));
     else if (currentNode instanceof Element) {
-      const attributes = [...currentNode.attributes].map(
-        ({ name, value }) => `${name}=${JSON.parse(value)}`
-      );
-      markup.push(
-        `<${currentNode.tagName.toLowerCase()} ${attributes.join(" ")}>`
-      );
-      if (currentNode instanceof HTMLElement) {
-        const { shadowRoot } = currentNode.attachInternals();
+      const tagName = currentNode.tagName.toLowerCase(),
+        attributes = [...currentNode.attributes].map(
+          ({ name, value }) => `${name}=${JSON.parse(value)}`
+        ),
+        shadowRoot = shadowDOMs.get(currentNode);
 
-        if (
-          shadowRoot &&
-          (!shadowRoots?.filter(Boolean)[0] || shadowRoots.includes(shadowRoot))
-        )
-          markup.push(getHTML.call(shadowRoot));
-      }
+      markup.push(`<${[tagName, ...attributes].join(" ")}>`);
+
+      if (shadowRoots.includes(shadowRoot))
+        markup.push(
+          `<template shadowrootmode="${shadowRoot.mode}">${getHTML.call(
+            shadowRoot,
+            { serializableShadowRoots, shadowRoot }
+          )}</template>`
+        );
     }
-    const { parentNode } = currentNode;
+    const { nextSibling, parentElement } = currentNode;
 
     if (
-      !currentNode.nextSibling &&
-      parentNode &&
-      (parentNode === this || this.contains(parentNode))
+      !nextSibling &&
+      parentElement &&
+      parentElement !== this &&
+      this.contains(parentElement)
     )
-      if (parentNode instanceof ShadowRoot) markup.push("</template>");
-      else if (parentNode instanceof Element)
-        markup.push(`</${parentNode.tagName.toLowerCase()}>`);
+      markup.push(`</${parentElement.tagName.toLowerCase()}>`);
   }
 
   return markup.join("");
@@ -69,9 +84,12 @@ export function attachDeclarativeShadowRoots(root: HTMLElement | ShadowRoot) {
   );
 
   for (const template of templates) {
-    const { parentElement, shadowRootMode: mode, content } = template;
-    // @ts-ignore
-    const shadowRoot = parentElement!.attachShadow({ mode });
+    const { parentElement, content } = template;
+
+    const shadowRoot = parentElement!.attachShadow({
+      // @ts-ignore
+      mode: template.getAttribute("shadowrootmode")
+    });
 
     shadowRoot.append(content);
 
@@ -80,7 +98,10 @@ export function attachDeclarativeShadowRoots(root: HTMLElement | ShadowRoot) {
     attachDeclarativeShadowRoots(shadowRoot);
   }
 }
-
+/**
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/setHTMLUnsafe}
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/setHTMLUnsafe}
+ */
 export function setHTMLUnsafe(this: Element | ShadowRoot, html: string) {
   this.innerHTML = html;
 
@@ -90,7 +111,9 @@ export function setHTMLUnsafe(this: Element | ShadowRoot, html: string) {
 const domParser = new DOMParser(),
   initDocument = ({ documentElement } = document) =>
     attachDeclarativeShadowRoots(documentElement);
-
+/**
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Document/parseHTMLUnsafe_static}
+ */
 export function parseHTMLUnsafe(html: string) {
   const document = domParser.parseFromString(html, "text/html");
 
