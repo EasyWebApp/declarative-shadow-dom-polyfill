@@ -3,7 +3,18 @@ export interface HTMLSerializationOptions {
   shadowRoots?: ShadowRoot[];
 }
 
-const xmlSerializer = new XMLSerializer();
+const xmlSerializer = new XMLSerializer(),
+  { attachShadow } = HTMLElement.prototype,
+  shadowDOMs = new WeakMap<Element, ShadowRoot>();
+
+HTMLElement.prototype.attachShadow = function (options: ShadowRootInit) {
+  const shadowRoot = attachShadow.call(this, options);
+
+  shadowDOMs.set(this, shadowRoot);
+
+  return shadowRoot;
+};
+
 /**
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/getHTML}
  * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/getHTML}
@@ -16,17 +27,6 @@ export function getHTML(
 
   if (!serializableShadowRoots || !shadowRoots[0])
     return (this as HTMLElement).innerHTML;
-
-  if (this instanceof HTMLElement) {
-    const { shadowRoot } = this.attachInternals();
-
-    return shadowRoots.includes(shadowRoot)
-      ? `<template shadowrootmode="${shadowRoot.mode}">${getHTML.call(
-          shadowRoot,
-          { serializableShadowRoots, shadowRoot },
-        )}</template>`
-      : this.innerHTML;
-  }
 
   const walker = document.createTreeWalker(this, NodeFilter.SHOW_ALL, {
       acceptNode: (node) =>
@@ -51,15 +51,30 @@ export function getHTML(
       const tagName = currentNode.tagName.toLowerCase(),
         attributes = [...currentNode.attributes].map(
           ({ name, value }) => `${name}=${JSON.parse(value)}`,
+        ),
+        shadowRoot = shadowDOMs.get(currentNode);
+
+      markup.push(`<${[tagName, ...attributes].join(" ")}>`);
+
+      if (shadowRoots.includes(shadowRoot))
+        markup.push(
+          `<template shadowrootmode="${shadowRoot.mode}">${getHTML.call(
+            shadowRoot,
+            { serializableShadowRoots, shadowRoot },
+          )}</template>`,
         );
-      markup.push(
-        `<${tagName} ${attributes.join(" ")}>${getHTML.call(currentNode, {
-          serializableShadowRoots,
-          shadowRoots,
-        })}</${tagName}>`,
-      );
     }
+    const { nextSibling, parentElement } = currentNode;
+
+    if (
+      !nextSibling &&
+      parentElement &&
+      parentElement !== this &&
+      this.contains(parentElement)
+    )
+      markup.push(`</${parentElement.tagName.toLowerCase()}>`);
   }
+
   return markup.join("");
 }
 
@@ -69,9 +84,12 @@ export function attachDeclarativeShadowRoots(root: HTMLElement | ShadowRoot) {
   );
 
   for (const template of templates) {
-    const { parentElement, shadowRootMode: mode, content } = template;
-    // @ts-ignore
-    const shadowRoot = parentElement!.attachShadow({ mode });
+    const { parentElement, content } = template;
+
+    const shadowRoot = parentElement!.attachShadow({
+      // @ts-ignore
+      mode: template.getAttribute("shadowrootmode"),
+    });
 
     shadowRoot.append(content);
 

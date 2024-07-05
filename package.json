@@ -23,9 +23,13 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "devDependencies": {
+    "@types/jsdom": "^21.1.7",
+    "@types/node": "^18.19.39",
     "husky": "^9.0.11",
+    "jsdom": "^24.1.0",
     "lint-staged": "^15.2.7",
     "prettier": "^3.3.2",
+    "tsx": "^4.16.2",
     "typedoc": "^0.26.3",
     "typedoc-plugin-mdn-links": "^3.2.2",
     "typescript": "^5.5.3"
@@ -35,7 +39,7 @@
   },
   "scripts": {
     "prepare": "husky",
-    "test": "lint-staged",
+    "test": "lint-staged  &&  tsx test/index.spec.ts",
     "build": "rm -rf dist/ docs/  &&  tsc  &&  typedoc source/",
     "prepublishOnly": "npm test  &&  npm run build"
   }

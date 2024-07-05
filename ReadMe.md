@@ -96,9 +96,9 @@ console.log(getHTML.call(newDocument.body));
 Either `jsdom`, `happy-dom` or `linkedom` is available DOM implementation.
 
 ```javascript
-import { Window } from "happy-dom";
+import { JSDOM } from "jsdom";
 
-const window = new Window(),
+const { window } = new JSDOM(),
   RequiredAPI = [
     "Text",
     "Comment",
