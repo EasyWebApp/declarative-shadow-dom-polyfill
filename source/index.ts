@@ -63,15 +63,11 @@ export function getHTML(
             { serializableShadowRoots, shadowRoot }
           )}</template>`
         );
+      if (!currentNode.childNodes[0]) markup.push(`</${tagName}>`);
     }
     const { nextSibling, parentElement } = currentNode;
 
-    if (
-      !nextSibling &&
-      parentElement &&
-      parentElement !== this &&
-      this.contains(parentElement)
-    )
+    if (!nextSibling && parentElement !== this)
       markup.push(`</${parentElement.tagName.toLowerCase()}>`);
   }
 
