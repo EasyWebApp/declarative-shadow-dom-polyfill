@@ -22,7 +22,7 @@ describe("Document.parseHTMLUnsafe()", () => {
 
     strictEqual(outerElements.length, 1);
     strictEqual(outerElements[0].tagName.toLowerCase(), "my-tag");
-    strictEqual(outerElements[0].shadowRoot.innerHTML.trim(), innerHTML);
+    strictEqual(outerElements[0].shadowRoot!.innerHTML.trim(), innerHTML);
   });
 });
 
@@ -34,25 +34,25 @@ describe(".setHTMLUnsafe()", () => {
 
     strictEqual(outerElements.length, 1);
     strictEqual(outerElements[0].tagName.toLowerCase(), "my-tag");
-    strictEqual(outerElements[0].shadowRoot.innerHTML.trim(), innerHTML);
+    strictEqual(outerElements[0].shadowRoot!.innerHTML.trim(), innerHTML);
   });
 });
 
 describe(".getHTML()", () => {
   it("should return `.innerHTML` value with no parameter", () => {
     const { body } = document;
-    const myTag = body.firstElementChild;
+    const myTag = body.firstElementChild!;
     const { shadowRoot } = myTag;
 
     strictEqual(body.innerHTML, body.getHTML());
     strictEqual(myTag.innerHTML, myTag.getHTML());
-    strictEqual(shadowRoot.innerHTML, shadowRoot.getHTML());
+    strictEqual(shadowRoot!.innerHTML, shadowRoot!.getHTML());
   });
 
   it("should return `.innerHTML` value with invalid parameters", () => {
     strictEqual(
       document.body.innerHTML,
-      document.body.getHTML({ serializableShadowRoots: true }),
+      document.body.getHTML({ serializableShadowRoots: true })
     );
 
     const missMatchedShadowRoot = document
@@ -63,20 +63,20 @@ describe(".getHTML()", () => {
       document.body.innerHTML,
       document.body.getHTML({
         serializableShadowRoots: true,
-        shadowRoots: [missMatchedShadowRoot],
-      }),
+        shadowRoots: [missMatchedShadowRoot]
+      })
     );
   });
 
   it("should generate a Declarative Shadow DOM string with valid parameters", () => {
     const serializedHTML = document.body.getHTML({
       serializableShadowRoots: true,
-      shadowRoots: [document.querySelector("my-tag").shadowRoot],
+      shadowRoots: [document.querySelector("my-tag")!.shadowRoot!]
     });
 
     strictEqual(
       serializedHTML.replace(/\s/g, ""),
-      outerHTML.replace(/\s/g, ""),
+      outerHTML.replace(/\s/g, "")
     );
   });
 });

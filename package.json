@@ -1,6 +1,6 @@
 {
   "name": "declarative-shadow-dom-polyfill",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "license": "LGPL-2.1-or-later",
   "author": "shiy2008@gmail.com",
   "description": "Web standard polyfill for Declarative Shadow DOM",
@@ -30,7 +30,7 @@
     "lint-staged": "^15.2.7",
     "prettier": "^3.3.2",
     "tsx": "^4.16.2",
-    "typedoc": "^0.26.3",
+    "typedoc": "^0.26.4",
     "typedoc-plugin-mdn-links": "^3.2.2",
     "typescript": "^5.5.3"
   },

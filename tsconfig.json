@@ -8,6 +8,7 @@
     "sourceMap": true,
     "outDir": "dist"
   },
+  "include": ["source/**/*"],
   "typedocOptions": {
     "name": "Declarative Shadow DOM polyfill",
     "excludeExternals": true,
