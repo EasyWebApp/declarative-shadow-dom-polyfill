@@ -15,38 +15,52 @@ HTMLElement.prototype.attachShadow = function (options: ShadowRootInit) {
   return shadowRoot;
 };
 
-/**
- * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/getHTML}
- * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/getHTML}
- */
-export function getHTML(
-  this: Element | ShadowRoot,
+export function* findShadowRoots(root: Node) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
+    acceptNode: (node: Element) =>
+      node instanceof HTMLElement
+        ? NodeFilter.FILTER_ACCEPT
+        : NodeFilter.FILTER_SKIP
+  });
+  var currentNode: HTMLElement | null = null;
+
+  while ((currentNode = walker.nextNode() as HTMLElement)) {
+    const shadowRoot = shadowDOMs.get(currentNode);
+
+    if (shadowRoot) {
+      yield shadowRoot;
+      yield* findShadowRoots(shadowRoot);
+    }
+  }
+}
+
+export function* generateHTML(
+  root: Node,
   { serializableShadowRoots, shadowRoots }: HTMLSerializationOptions = {}
 ) {
   shadowRoots = shadowRoots?.filter(Boolean) || [];
 
-  if (!serializableShadowRoots || !shadowRoots[0])
-    return (this as HTMLElement).innerHTML;
+  if (!serializableShadowRoots || !shadowRoots[0]) {
+    yield (root as HTMLElement).innerHTML;
+    return;
+  }
 
-  const walker = document.createTreeWalker(this, NodeFilter.SHOW_ALL, {
-      acceptNode: (node) =>
-        node === this || node instanceof SVGElement
-          ? NodeFilter.FILTER_SKIP
-          : NodeFilter.FILTER_ACCEPT
-    }),
-    markup: string[] = [];
-
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ALL, {
+    acceptNode: (node) =>
+      node === root || node instanceof SVGElement
+        ? NodeFilter.FILTER_SKIP
+        : NodeFilter.FILTER_ACCEPT
+  });
   var currentNode: Node | null = null;
 
   while ((currentNode = walker.nextNode())) {
     if (currentNode instanceof CDATASection)
-      markup.push(`<![CDATA[${currentNode.nodeValue}]]>`);
-    else if (currentNode instanceof Text)
-      markup.push(currentNode.nodeValue || "");
+      yield `<![CDATA[${currentNode.nodeValue}]]>`;
+    else if (currentNode instanceof Text) yield currentNode.nodeValue || "";
     else if (currentNode instanceof Comment)
-      markup.push(`<!--${currentNode.nodeValue}-->`);
+      yield `<!--${currentNode.nodeValue}-->`;
     else if (currentNode instanceof SVGElement)
-      markup.push(xmlSerializer.serializeToString(currentNode));
+      yield xmlSerializer.serializeToString(currentNode);
     else if (currentNode instanceof Element) {
       const tagName = currentNode.tagName.toLowerCase(),
         attributes = [...currentNode.attributes].map(
@@ -54,24 +68,33 @@ export function getHTML(
         ),
         shadowRoot = shadowDOMs.get(currentNode);
 
-      markup.push(`<${[tagName, ...attributes].join(" ")}>`);
+      yield `<${[tagName, ...attributes].join(" ")}>`;
 
-      if (shadowRoots.includes(shadowRoot))
-        markup.push(
-          `<template shadowrootmode="${shadowRoot.mode}">${getHTML.call(
-            shadowRoot,
-            { serializableShadowRoots, shadowRoot }
-          )}</template>`
-        );
-      if (!currentNode.childNodes[0]) markup.push(`</${tagName}>`);
+      if (shadowRoots.includes(shadowRoot)) {
+        const shadowRootHTML = [
+          ...generateHTML(shadowRoot, { serializableShadowRoots, shadowRoots })
+        ].join("");
+
+        yield `<template shadowrootmode="${shadowRoot.mode}">${shadowRootHTML}</template>`;
+      }
+      if (!currentNode.childNodes[0]) yield `</${tagName}>`;
     }
     const { nextSibling, parentElement } = currentNode;
 
-    if (!nextSibling && parentElement !== this)
-      markup.push(`</${parentElement.tagName.toLowerCase()}>`);
+    if (!nextSibling && parentElement && parentElement !== root)
+      yield `</${parentElement.tagName.toLowerCase()}>`;
   }
+}
 
-  return markup.join("");
+/**
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/Element/getHTML}
+ * @see {@link https://developer.mozilla.org/en-US/docs/Web/API/ShadowRoot/getHTML}
+ */
+export function getHTML(
+  this: Element | ShadowRoot,
+  options: HTMLSerializationOptions = {}
+) {
+  return [...generateHTML(this, options)].join("");
 }
 
 export function attachDeclarativeShadowRoots(root: HTMLElement | ShadowRoot) {
@@ -121,7 +144,6 @@ export function parseHTMLUnsafe(html: string) {
 declare global {
   interface ShadowRootSerializable {
     getHTML: typeof getHTML;
-    setHTMLUnsafe: typeof setHTMLUnsafe;
   }
   interface Element extends ShadowRootSerializable {}
   interface ShadowRoot extends ShadowRootSerializable {}
@@ -131,7 +153,7 @@ Element.prototype.getHTML ||= getHTML;
 Element.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
 ShadowRoot.prototype.getHTML ||= getHTML;
 ShadowRoot.prototype.setHTMLUnsafe ||= setHTMLUnsafe;
-Document["parseHTMLUnsafe"] ||= parseHTMLUnsafe;
+Document.parseHTMLUnsafe ||= parseHTMLUnsafe;
 
 new Promise<Event | void>((resolve) => {
   if (document.readyState === "complete") resolve();

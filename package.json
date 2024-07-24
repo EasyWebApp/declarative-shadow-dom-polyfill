@@ -1,6 +1,6 @@
 {
   "name": "declarative-shadow-dom-polyfill",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "license": "LGPL-2.1-or-later",
   "author": "shiy2008@gmail.com",
   "description": "Web standard polyfill for Declarative Shadow DOM",
@@ -22,17 +22,20 @@
   },
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "peerDependencies": {
+    "typescript": ">=5.5.3"
+  },
   "devDependencies": {
     "@types/jsdom": "^21.1.7",
-    "@types/node": "^18.19.39",
-    "husky": "^9.0.11",
-    "jsdom": "^24.1.0",
+    "@types/node": "^18.19.42",
+    "husky": "^9.1.1",
+    "jsdom": "^24.1.1",
     "lint-staged": "^15.2.7",
-    "prettier": "^3.3.2",
+    "prettier": "^3.3.3",
     "tsx": "^4.16.2",
-    "typedoc": "^0.26.4",
-    "typedoc-plugin-mdn-links": "^3.2.3",
-    "typescript": "^5.5.3"
+    "typedoc": "^0.26.5",
+    "typedoc-plugin-mdn-links": "^3.2.5",
+    "typescript": "~5.5.4"
   },
   "prettier": {
     "trailingComma": "none"
