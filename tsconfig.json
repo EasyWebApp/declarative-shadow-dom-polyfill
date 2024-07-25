@@ -1,5 +1,6 @@
 {
   "compilerOptions": {
+    "strict": true,
     "module": "UMD",
     "moduleResolution": "Node",
     "downlevelIteration": true,

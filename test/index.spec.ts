@@ -1,8 +1,8 @@
-import { strictEqual } from "node:assert";
+import { deepStrictEqual, strictEqual } from "node:assert";
 import { describe, it } from "node:test";
 
 import "./global";
-import "../source";
+import { findShadowRoots, generateHTML } from "../source";
 
 const innerHTML = `<p>Hello, Declarative Shadow DOM!</p>`;
 const shadowHTML = `<template shadowrootmode="open">${innerHTML}</template>`;
@@ -10,7 +10,7 @@ const outerHTML = `<my-tag>${shadowHTML}</my-tag>`;
 
 describe("Document.parseHTMLUnsafe()", () => {
   it("should parse a Declarative Shadow DOM string into a Document", () => {
-    const { body } = Document["parseHTMLUnsafe"](outerHTML);
+    const { body } = Document.parseHTMLUnsafe(outerHTML);
 
     const outerElements = body.querySelectorAll("*");
 
@@ -29,6 +29,34 @@ describe(".setHTMLUnsafe()", () => {
     strictEqual(outerElements.length, 1);
     strictEqual(outerElements[0].tagName.toLowerCase(), "my-tag");
     strictEqual(outerElements[0].shadowRoot!.innerHTML.trim(), innerHTML);
+  });
+});
+
+describe("internal utility", () => {
+  it("should find all kinds of shadow roots in a DOM tree", () => {
+    const { body } = Document.parseHTMLUnsafe(`
+      <open-tag>
+        <template shadowrootmode="open">${innerHTML}</template>
+      </open-tag>
+      <close-tag></close-tag>
+    `);
+    const closedShadowRoot = body.lastElementChild!.attachShadow({
+        mode: "closed"
+      }),
+      { shadowRoot } = body.querySelector("open-tag")!,
+      shadowRoots = [...findShadowRoots(body)];
+
+    deepStrictEqual([shadowRoot, closedShadowRoot], shadowRoots);
+  });
+
+  it("should generate HTML strings of a DOM tree", () => {
+    const markups = [
+      ...generateHTML(document.body, {
+        serializableShadowRoots: true,
+        shadowRoots: [...findShadowRoots(document.body)]
+      })
+    ];
+    strictEqual(markups.join(""), outerHTML);
   });
 });
 
