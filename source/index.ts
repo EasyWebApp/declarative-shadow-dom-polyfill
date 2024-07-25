@@ -15,7 +15,7 @@ HTMLElement.prototype.attachShadow = function (options: ShadowRootInit) {
   return shadowRoot;
 };
 
-export function* findShadowRoots(root: Node) {
+export function* findShadowRoots(root: Node): Generator<ShadowRoot> {
   const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT, {
     acceptNode: (node: Element) =>
       node instanceof HTMLElement
@@ -37,7 +37,7 @@ export function* findShadowRoots(root: Node) {
 export function* generateHTML(
   root: Node,
   { serializableShadowRoots, shadowRoots }: HTMLSerializationOptions = {}
-) {
+): Generator<string> {
   shadowRoots = shadowRoots?.filter(Boolean) || [];
 
   if (!serializableShadowRoots || !shadowRoots[0]) {
@@ -70,7 +70,7 @@ export function* generateHTML(
 
       yield `<${[tagName, ...attributes].join(" ")}>`;
 
-      if (shadowRoots.includes(shadowRoot)) {
+      if (shadowRoot && shadowRoots.includes(shadowRoot)) {
         const shadowRootHTML = [
           ...generateHTML(shadowRoot, { serializableShadowRoots, shadowRoots })
         ].join("");
@@ -106,8 +106,7 @@ export function attachDeclarativeShadowRoots(root: HTMLElement | ShadowRoot) {
     const { parentElement, content } = template;
 
     const shadowRoot = parentElement!.attachShadow({
-      // @ts-ignore
-      mode: template.getAttribute("shadowrootmode")
+      mode: template.getAttribute("shadowrootmode") as ShadowRootMode
     });
 
     shadowRoot.append(content);
