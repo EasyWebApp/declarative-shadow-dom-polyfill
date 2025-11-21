@@ -2,7 +2,7 @@ import { deepStrictEqual, strictEqual } from "node:assert";
 import { describe, it } from "node:test";
 
 import "./global";
-import { findShadowRoots, generateHTML } from "../source";
+import { encodeHTMLEntities, findShadowRoots, generateHTML } from "../source";
 
 const innerHTML = `<p>Hello, Declarative Shadow DOM!</p>`;
 const shadowHTML = `<template shadowrootmode="open">${innerHTML}</template>`;
@@ -33,6 +33,15 @@ describe(".setHTMLUnsafe()", () => {
 });
 
 describe("internal utility", () => {
+  it("should encode HTML entities correctly", () => {
+    const encoded = encodeHTMLEntities(`This is a "test" & it's <important>!`);
+
+    strictEqual(
+      encoded,
+      "This is a &#34;test&#34; &#38; it&#39;s &#60;important&#62;!"
+    );
+  });
+
   it("should find all kinds of shadow roots in a DOM tree", () => {
     const { body } = Document.parseHTMLUnsafe(`
       <open-tag>

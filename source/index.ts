@@ -34,6 +34,19 @@ export function* findShadowRoots(root: Node): Generator<ShadowRoot> {
   }
 }
 
+/**
+ * @see {@link https://stackoverflow.com/a/18750001}
+ *
+ * Posted by Chris Baker, modified by community. See post 'Timeline' for change history
+ *
+ * @license CC-BY-SA-4.0
+ */
+export const encodeHTMLEntities = (raw: string) =>
+  raw.replace(
+    /[\u00A0-\u9999<>'"&]/g,
+    (char) => "&#" + char.charCodeAt(0) + ";"
+  );
+
 export function* generateHTML(
   root: Node,
   { serializableShadowRoots, shadowRoots }: HTMLSerializationOptions = {}
@@ -64,7 +77,7 @@ export function* generateHTML(
     else if (currentNode instanceof Element) {
       const tagName = currentNode.tagName.toLowerCase(),
         attributes = [...currentNode.attributes].map(
-          ({ name, value }) => `${name}=${JSON.parse(value)}`
+          ({ name, value }) => `${name}="${encodeHTMLEntities(value)}"`
         ),
         shadowRoot = shadowDOMs.get(currentNode);
 
